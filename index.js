@@ -1,6 +1,6 @@
 #! /usr/local/bin/node
 
-'use strict'
+'use strict';
 /*
     Read bugs for the current release cycle (defined in branchDate) 
     for Firefox components in CSV format.
