@@ -1,3 +1,5 @@
+#! /usr/local/bin/node 
+
 /*
     Read bugs for the current release cycle (defined in branchDate) 
     for Firefox components in CSV format.
@@ -16,12 +18,12 @@ const asTable = require('as-table').configure ({ right: true });
 
 const max = 10000; // max records we can read from Bugzilla
 
-var branchDate = '2018-09-04'; // YYYY-MM-DD of first nightly of current release
+var branchDate = '2018-12-10'; // YYYY-MM-DD of first nightly of current release
 var last = 0; // last bug id we saw
 var count = 0; // number of records we got in a GET
 var done = false;
 
-var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?columnlist=triage_owner%2Cproduct%2Ccomponent%2Cbug_status%2Cresolution%2Cpriority%2Ckeywords%2Creporter%2Cassigned_to%2Cshort_desc%2Cchangeddate%2Copendate&ctype=csv&human=1&chfield=%5BBug%20creation%5D&chfieldfrom=${branchDate}&chfieldto=Now&email1=intermittent-bug-filer%40mozilla.bugs&emailreporter1=1&emailtype1=notequals&f1=bug_id&limit=0&o1=greaterthan&product=DevTools&product=External%20Software%20Affecting%20Firefox&product=Firefox&product=Firefox%20Build%20System&product=GeckoView&product=Firefox%20for%20Android&product=Firefox%20for%20Echo%20Show&product=Firefox%20for%20FireTV&product=Firefox%20for%20iOS&product=Focus&product=Focus-iOS&product=NSPR&product=NSS&product=Toolkit&product=WebExtensions&query_format=advanced&v1=`;
+var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?chfield=%5BBug%20creation%5D&chfieldfrom=${branchDate}&chfieldto=Now&columnlist=triage_owner%2Cproduct%2Ccomponent%2Cbug_status%2Cresolution%2Cpriority%2Ckeywords%2Creporter%2Cassigned_to%2Cshort_desc%2Cchangeddate%2Copendate&email1=intermittent-bug-filer%40mozilla.bugs&emailreporter1=1&emailtype1=notequals&f1=bug_id&f2=bug_severity&f3=keywords&limit=0&o1=greaterthan&o2=notequals&o3=nowordssubstr&product=DevTools&product=External%20Software%20Affecting%20Firefox&product=Firefox&product=Firefox%20Build%20System&product=Firefox%20for%20Android&product=Firefox%20for%20Echo%20Show&product=Firefox%20for%20FireTV&product=Firefox%20for%20iOS&product=Focus&product=Focus-iOS&product=GeckoView&product=NSPR&product=NSS&product=Toolkit&product=WebExtensions&short_desc=%5E%5C%5Bmeta&short_desc_type=notregexp&v2=enhancement&v3=meta%2C%20feature&ctype=csv&human=1&v1=`;
 
 // create array to store data read
 var data = [];
@@ -108,6 +110,7 @@ function get_parser() {
                 return {
                     'Triage Owner': triage_owner,
                     'Untriaged': report[triage_owner]['--'],
+                    '%': (report[triage_owner].total > 0 ? Math.round(report[triage_owner]['--']/report[triage_owner].total*100) : '--'),
                     '> M': report[triage_owner]['> M'],
                     '> W': report[triage_owner]['< M'] + report[triage_owner]['> M'],
                     '< W': report[triage_owner]['< W'],
@@ -118,7 +121,7 @@ function get_parser() {
                     'P5': report[triage_owner].p5,
                     'Total': report[triage_owner].total
                 };
-            }).sort((a, b) => { return (b['> W'] - a['> W']);});
+            }).sort((a, b) => { return (b['> M'] - a['> M']); });
             console.log(asTable(formatted));
             write_report(formatted);
         } else {
