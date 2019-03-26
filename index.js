@@ -1,5 +1,6 @@
-#! /usr/local/bin/node 
+#! /usr/local/bin/node
 
+'use strict'
 /*
     Read bugs for the current release cycle (defined in branchDate) 
     for Firefox components in CSV format.
@@ -146,7 +147,7 @@ function write_report(data) {
                 if (err) {
                     console.error(err);
                 } else {
-                    write_report(str);
+                    write_report(data);
                 }
             });
         } else {
