@@ -24,7 +24,7 @@ var last = 0; // last bug id we saw
 var count = 0; // number of records we got in a GET
 var done = false;
 
-var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?chfield=%5BBug%20creation%5D&chfieldfrom=${branchDate}&chfieldto=Now&columnlist=triage_owner%2Cproduct%2Ccomponent%2Cbug_status%2Cresolution%2Cpriority%2Ckeywords%2Creporter%2Cassigned_to%2Cshort_desc%2Cchangeddate%2Copendate&email1=intermittent-bug-filer%40mozilla.bugs&emailreporter1=1&emailtype1=notequals&f1=bug_id&f2=bug_severity&f3=keywords&limit=0&o1=greaterthan&o2=notequals&o3=nowordssubstr&product=DevTools&product=External%20Software%20Affecting%20Firefox&product=Firefox&product=Firefox%20Build%20System&product=Firefox%20for%20Android&product=Firefox%20for%20Echo%20Show&product=Firefox%20for%20FireTV&product=Firefox%20for%20iOS&product=Focus&product=Focus-iOS&product=GeckoView&product=NSPR&product=NSS&product=Toolkit&product=WebExtensions&short_desc=%5E%5C%5Bmeta&short_desc_type=notregexp&v2=enhancement&v3=meta%2C%20feature&ctype=csv&human=1&v1=`;
+var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?chfield=%5BBug%20creation%5D&chfieldfrom=${branchDate}&chfieldto=Now&columnlist=triage_owner%2Cproduct%2Ccomponent%2Cbug_status%2Cresolution%2Cpriority%2Ckeywords%2Creporter%2Cassigned_to%2Cshort_desc%2Cchangeddate%2Copendate&email1=intermittent-bug-filer%40mozilla.bugs&emailreporter1=1&emailtype1=notequals&f1=bug_id&f2=bug_severity&f3=keywords&limit=0&o1=greaterthan&o2=notequals&o3=nowordssubstr&product=Core&product=DevTools&product=External%20Software%20Affecting%20Firefox&product=Firefox&product=Firefox%20Build%20System&product=Firefox%20for%20Android&product=Firefox%20for%20Echo%20Show&product=Firefox%20for%20FireTV&product=Firefox%20for%20iOS&product=Focus&product=Focus-iOS&product=GeckoView&product=NSPR&product=NSS&product=Toolkit&product=WebExtensions&short_desc=%5E%5C%5Bmeta&short_desc_type=notregexp&v2=enhancement&v3=meta%2C%20feature&ctype=csv&bug_type=defect&human=1&v1=`;
 
 // create array to store data read
 var data = [];
@@ -122,7 +122,7 @@ function get_parser() {
                     'P5': report[triage_owner].p5,
                     'Total': report[triage_owner].total
                 };
-            }).sort((a, b) => { return (b['> M'] - a['> M']); });
+            }).sort((a, b) => { return (b['> W'] - a['> W']); });
             console.log(asTable(formatted));
             write_report(formatted);
         } else {
