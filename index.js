@@ -30,7 +30,7 @@ var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?chfield=%5BBug%20creatio
 var data = [];
 
 // create data structure to hold results
-var report = {};
+var report = {'Triage Owner': [], 'Component': []};
 
 // current date
 var now = moment.utc();
@@ -45,15 +45,35 @@ function get_parser() {
         while (record = parser.read()) {
 
             let triage_owner = record['Triage Owner'];
+            let component    = record.Product + '::' + record.Component;
+
             data.push(record);
             count++;
 
             if (record.Resolution.trim() === '---') {
                 // first update the triage owner totals
-                if (report[triage_owner]) {
-                    report[triage_owner].total ++;
+                if (report['Triage Owner'][triage_owner]) {
+                    report['Triage Owner'][triage_owner].total ++;
                 } else {
-                    report[triage_owner] = { 
+                    report['Triage Owner'][triage_owner] = {
+                        total: 1,
+                        '--' : 0,
+                        '> M': 0,
+                        '< M': 0,
+                        '< W': 0,
+                        p1: 0,
+                        p2: 0,
+                        p3: 0,
+                        p4: 0,
+                        p5: 0
+                    };
+                }
+
+                // then update the component totals
+                if (report.Component[component]) {
+                    report.Component[component].total ++;
+                } else {
+                    report.Component[component] = {
                         total: 1,
                         '--' : 0,
                         '> M': 0,
@@ -70,23 +90,28 @@ function get_parser() {
                 var priority = record.Priority.trim().toLowerCase();
 
                 // then the per-owner triage totals
-                report[triage_owner][priority] ++;
+                report['Triage Owner'][triage_owner][priority] ++;
 
+                // and the per-component triage totals
+                report.Component[component][priority] ++;
+
+                // and age group totals
                 if (priority === '--') {
                     // then ages of untriaged-totals
                     var creation = new moment(record.Opened);
-                    var age = moment.duration(now.diff(creation)).asWeeks();          
+                    var age = moment.duration(now.diff(creation)).asWeeks();
                     var group;
-                
+
                     if (age <= 1) {
-                    group = '< W';
+                        group = '< W';
                     } else if (age <= 4) {
-                    group = '< M';
+                        group = '< M';
                     } else {
-                    group = '> M';
+                        group = '> M';
                     }
 
-                    report[triage_owner][group] ++;
+                    report['Triage Owner'][triage_owner][group] ++;
+                    report.Component[component][group] ++;
                 }
 
                 if(record["Bug ID"] > last) {
@@ -105,26 +130,28 @@ function get_parser() {
         if (count < max) {
             done = true;
             console.log('read last batch');
-            // write data, first turning the report object into an array of objects
-            // then sorting by the number of untriaged bugs, descending
-            var formatted = Object.keys(report).map(triage_owner => {
-                return {
-                    'Triage Owner': triage_owner,
-                    'Untriaged': report[triage_owner]['--'],
-                    '%': (report[triage_owner].total > 0 ? Math.round(report[triage_owner]['--']/report[triage_owner].total*100) : '--'),
-                    '> M': report[triage_owner]['> M'],
-                    '> W': report[triage_owner]['< M'] + report[triage_owner]['> M'],
-                    '< W': report[triage_owner]['< W'],
-                    'P1': report[triage_owner].p1,
-                    'P2': report[triage_owner].p2,
-                    'P3': report[triage_owner].p3,
-                    'P4': report[triage_owner].p4,
-                    'P5': report[triage_owner].p5,
-                    'Total': report[triage_owner].total
-                };
-            }).sort((a, b) => { return (b['> W'] - a['> W']); });
-            console.log(asTable(formatted));
-            write_report(formatted);
+            Object.keys(report).forEach(reportName => {
+                // write data, first turning the report object into an array of objects
+                // then sorting by the number of untriaged bugs, descending
+                let formatted = Object.keys(report[reportName]).map(category => {
+                    return {
+                        Category: category,
+                        'Untriaged': report[reportName][category]['--'],
+                        '%': (report[reportName][category].total > 0 ? Math.round(report[reportName][category]['--']/report[reportName][category].total*100) : '--'),
+                        '> M': report[reportName][category]['> M'],
+                        '> W': report[reportName][category]['< M'] + report[reportName][category]['> M'],
+                        '< W': report[reportName][category]['< W'],
+                        'P1': report[reportName][category].p1,
+                        'P2': report[reportName][category].p2,
+                        'P3': report[reportName][category].p3,
+                        'P4': report[reportName][category].p4,
+                        'P5': report[reportName][category].p5,
+                        'Total': report[reportName][category].total
+                    };
+                }).sort((a, b) => { return (b['> W'] - a['> W']); });
+                console.log(asTable(formatted));
+                write_report(reportName, formatted);
+            });
         } else {
             start_stream(last);
         }
@@ -140,18 +167,18 @@ function start_stream(last) {
     bug_stream = got.stream(URL).pipe(parser);
 }
 
-function write_report(data) {
+function write_report(reportName, data) {
     fs.exists('./out', (exists) => {
         if (!exists) {
             fs.mkdir('./out', (err) => {
                 if (err) {
                     console.error(err);
                 } else {
-                    write_report(data);
+                    write_report(reportName, data);
                 }
             });
         } else {
-            var file = fs.openSync('./out/report.csv', 'w');
+            var file = fs.openSync(`./out/${reportName}.csv`, 'w');
             stringify(data, {
                 header: true
             }, (err, output) => {
@@ -162,7 +189,7 @@ function write_report(data) {
                         if (err) {
                             console.error(err);
                         } else {
-                            console.log('saved data in ./out/report.csv');
+                            console.log(`saved data in ./out/${reportName}.csv`);
                         }
                     });
                 }
