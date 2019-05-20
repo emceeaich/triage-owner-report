@@ -19,12 +19,13 @@ const asTable = require('as-table').configure ({ right: true });
 
 const max = 10000; // max records we can read from Bugzilla
 
-var branchDate = '2018-12-10'; // YYYY-MM-DD of first nightly of current release
+var branchDate = '2019-01-28'; // YYYY-MM-DD of first nightly of current release
 var last = 0; // last bug id we saw
+var lastDate, firstDate;
 var count = 0; // number of records we got in a GET
 var done = false;
 
-var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?chfield=%5BBug%20creation%5D&chfieldfrom=${branchDate}&chfieldto=Now&columnlist=triage_owner%2Cproduct%2Ccomponent%2Cbug_status%2Cresolution%2Cpriority%2Ckeywords%2Creporter%2Cassigned_to%2Cshort_desc%2Cchangeddate%2Copendate&email1=intermittent-bug-filer%40mozilla.bugs&emailreporter1=1&emailtype1=notequals&f1=bug_id&f2=bug_severity&f3=keywords&limit=0&o1=greaterthan&o2=notequals&o3=nowordssubstr&product=Core&product=DevTools&product=External%20Software%20Affecting%20Firefox&product=Firefox&product=Firefox%20Build%20System&product=Firefox%20for%20Android&product=Firefox%20for%20Echo%20Show&product=Firefox%20for%20FireTV&product=Firefox%20for%20iOS&product=Focus&product=Focus-iOS&product=GeckoView&product=NSPR&product=NSS&product=Toolkit&product=WebExtensions&short_desc=%5E%5C%5Bmeta&short_desc_type=notregexp&v2=enhancement&v3=meta%2C%20feature&ctype=csv&bug_type=defect&human=1&v1=`;
+var URLbase = `https://bugzilla.mozilla.org/buglist.cgi?chfield=%5BBug%20creation%5D&chfieldfrom=${branchDate}&chfieldto=Now&columnlist=triage_owner%2Cproduct%2Ccomponent%2Cbug_status%2Cresolution%2Cpriority%2Ckeywords%2Creporter%2Cassigned_to%2Cshort_desc%2Cchangeddate%2Copendate&email1=intermittent-bug-filer%40mozilla.bugs&emailreporter1=1&emailtype1=notequals&f1=bug_id&f2=bug_severity&f3=keywords&limit=0&o1=greaterthan&o2=notequals&o3=nowordssubstr&product=Core&product=DevTools&product=External%20Software%20Affecting%20Firefox&product=Firefox&product=Firefox%20Build%20System&product=Firefox%20for%20Android&product=Firefox%20for%20Echo%20Show&product=Firefox%20for%20FireTV&product=Firefox%20for%20iOS&product=Focus&product=Focus-iOS&product=GeckoView&product=NSPR&product=NSS&product=Toolkit&product=WebExtensions&short_desc=%5E%5C%5Bmeta&short_desc_type=notregexp&v2=enhancement&v3=meta%2C%20feature&ctype=csv&type=defect&human=1&limit=${max}&v1=`;
 
 // create array to store data read
 var data = [];
@@ -46,11 +47,27 @@ function get_parser() {
 
             let triage_owner = record['Triage Owner'];
             let component    = record.Product + '::' + record.Component;
-
-            data.push(record);
+            var creation = new moment(record.Opened);
             count++;
-
+            
             if (record.Resolution.trim() === '---') {
+
+                data.push(record);
+
+                if (data.length === 1) {
+                    console.log('set dates')
+                    lastDate = creation;
+                    firstDate = creation;
+                }
+    
+                if (creation > lastDate) {
+                    lastDate = creation;
+                }
+    
+                if (creation < firstDate) {
+                    firstDate = creation;
+                }
+
                 // first update the triage owner totals
                 if (report['Triage Owner'][triage_owner]) {
                     report['Triage Owner'][triage_owner].total ++;
@@ -98,7 +115,7 @@ function get_parser() {
                 // and age group totals
                 if (priority === '--') {
                     // then ages of untriaged-totals
-                    var creation = new moment(record.Opened);
+
                     var age = moment.duration(now.diff(creation)).asWeeks();
                     var group;
 
@@ -125,7 +142,10 @@ function get_parser() {
     })
     .on('end', function() {
         console.info('got', count, 'records');
+        console.info('data array is', data.length, 'long');
         console.info('last id', last);
+        console.info('first date', firstDate.format());
+        console.info('last date', lastDate.format());
         // check for boundary
         if (count < max) {
             done = true;
