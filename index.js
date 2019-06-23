@@ -55,7 +55,6 @@ function get_parser() {
                 data.push(record);
 
                 if (data.length === 1) {
-                    console.log('set dates')
                     lastDate = creation;
                     firstDate = creation;
                 }
