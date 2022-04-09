@@ -14,7 +14,7 @@
     "csv-parse": "^4.4.6",
     "csv-stringify": "^5.1.2",
     "got": "^9.4.0",
-    "moment": "^2.23.0",
+    "moment": "^2.29.2",
     "prettyjson": "^1.2.1"
   }
 }
