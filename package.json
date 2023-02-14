@@ -13,7 +13,7 @@
     "assert": "^1.4.1",
     "csv-parse": "^4.4.6",
     "csv-stringify": "^5.1.2",
-    "got": "^9.4.0",
+    "got": "^11.8.5",
     "moment": "^2.29.4",
     "prettyjson": "^1.2.1"
   }
